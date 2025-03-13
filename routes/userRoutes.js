@@ -1,20 +1,16 @@
 // Import the Express framework
 
 const express = require('express');
-
-// Import the register and login controller functions from userController.js
-
-const { register, login } = require('../controllers/userController');
+const { login, register, logout, updateUser } = require('../controllers/userController');
+const { protect } = require('../middleware/authMiddleware');
 
 // Create a new router instance
 
 const router = express.Router();
- 
 
- 
-router.post('/login', login);
 router.post('/register', register);
-
-// Export the router so it can be used in other parts of the application
+router.post('/login', login);
+router.post('/logout', logout);
+router.put('/update', protect, updateUser);  
 
 module.exports = router;
