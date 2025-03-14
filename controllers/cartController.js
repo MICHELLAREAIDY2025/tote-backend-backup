@@ -4,7 +4,7 @@ const Product = require('../models/Product');
 exports.addToCart = async (req, res) => {
     try {
         const { product_id, quantity } = req.body;
-        const user_id = req.user.id;
+       
 
         if (!product_id || quantity <= 0) {
             return res.status(400).json({ error: 'Invalid product or quantity' });
@@ -14,7 +14,7 @@ exports.addToCart = async (req, res) => {
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
-
+        const user_id = req.user.id;
         let cartItem = await Cart.findOne({ where: { user_id, product_id } });
 
         if (cartItem) {
