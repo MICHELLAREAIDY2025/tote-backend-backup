@@ -8,6 +8,7 @@ require('./models/Order');
 require('./models/OrderItem');
 
 const userRoutes = require('./routes/userRoutes'); 
+const categoryRoutes = require('./routes/categoryRoutes.js');
 
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
@@ -22,6 +23,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/categories', categoryRoutes);
+
 
 app.get('/', (req, res) => {
     res.send('Backend is Running!');
