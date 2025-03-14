@@ -2,14 +2,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Login function: Handles user authentication
 exports.login = async (req, res) => {
     try {
-        // Extract email and password from request body
-
         const { email, password } = req.body;
-        
-        // Check if a user with the given email exists in the database
 
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password are required' });
@@ -64,12 +59,8 @@ const validatePassword = (password) => /^(?=.*[A-Z])(?=.*\d).{6,}$/.test(passwor
 
 const hashPassword = (password) => password ? bcrypt.hashSync(password, 10) : null;
 
-// Register function: Handles user registration
-
 exports.register = async (req, res) => {
     try {
-        // Extract user details from request body
-
         const { name, email, password, role, address } = req.body;
 
         if (!name || !email || !password) {
@@ -93,15 +84,12 @@ exports.register = async (req, res) => {
 
         const hashedPassword = hashPassword(password);
 
-        // Create a new user in the database
-
-
         const newUser = await User.create({ 
             name, 
             email, 
-            password: hashedPassword, // Store hashed password
-            role: role || 'customer', // Default role is 'customer' if none is provided
-            address: address || null  // Default address is null if not provided 
+            password: hashedPassword, 
+            role: role || 'customer',  
+            address: address || null   
         });
 
         return res.status(201).json({ 

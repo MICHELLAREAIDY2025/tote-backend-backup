@@ -3,9 +3,15 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const sequelize = require('./config/db'); 
-const userRoutes = require('./routes/userRoutes'); 
-const productRoutes = require('./routes/productRoutes');
 
+require('./models/Order'); 
+require('./models/OrderItem');
+
+const userRoutes = require('./routes/userRoutes'); 
+
+const productRoutes = require('./routes/productRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const app = express();
 
 app.use(cors({ credentials: true, origin: 'http://localhost:3000' })); 
@@ -14,6 +20,8 @@ app.use(cookieParser());
 
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
 
 app.get('/', (req, res) => {
     res.send('Backend is Running!');

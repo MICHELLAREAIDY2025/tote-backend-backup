@@ -1,50 +1,23 @@
-// Import Sequelize and DataTypes from sequelize package
 const { DataTypes } = require('sequelize');
-
-// Import the Sequelize instance from the db.js file
 const sequelize = require('../config/db');
+const Category = require('./Category'); // Import Category model
 
-// Define the Product model
 const Product = sequelize.define('Product', {
-    id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    name: { type: DataTypes.STRING, allowNull: false },
+    description: { type: DataTypes.TEXT, allowNull: true },
+    price: { type: DataTypes.FLOAT, allowNull: false },
+    category_id: { 
+        type: DataTypes.INTEGER, 
+        allowNull: false, 
+        references: { model: Category, key: 'id' } //  Foreign Key
     },
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    description: {
-        type: DataTypes.TEXT, // CORRECTION: Changed to TEXT for longer descriptions
-        allowNull: true,
-    },
-    price: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-    },
-    category_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
-    stock: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-    },
-    image: {
-        type: DataTypes.STRING,
-        allowNull: true,
-    },
-    user_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    }
-}, { 
-    timestamps: true,  // CORRECTION: Enable timestamps for tracking
-    tableName: 'products' // CORRECTION: Explicitly set table name
-});
+    stock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    image: { type: DataTypes.STRING, allowNull: true }
+}, { timestamps: true });
 
+//  Set up Product-Category relationship
+Category.hasMany(Product, { foreignKey: 'category_id', onDelete: 'CASCADE' });
+Product.belongsTo(Category, { foreignKey: 'category_id' });
 
-// Export the Product model
 module.exports = Product;

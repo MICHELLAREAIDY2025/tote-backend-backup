@@ -1,10 +1,6 @@
-// Import the Express framework
-
 const express = require('express');
 const { login, register, logout, updateUser } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
-
-// Create a new router instance
 
 const router = express.Router();
 
