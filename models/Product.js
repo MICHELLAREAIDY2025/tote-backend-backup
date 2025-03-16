@@ -13,7 +13,7 @@ const Product = sequelize.define('Product', {
         references: { model: Category, key: 'id' } //  Foreign Key
     },
     stock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-    image: { type: DataTypes.STRING, allowNull: true }
+    image: { type: DataTypes.JSON, allowNull: true }
 }, { timestamps: true });
 
 //  Set up Product-Category relationship
