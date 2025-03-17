@@ -3,9 +3,14 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const sequelize = require('./config/db'); 
+const path = require('path');
+const bodyParser = require("body-parser");
+const contactRoutes = require("./routes/contactRoutes");
 
 require('./models/Order'); 
 require('./models/OrderItem');
+// Import multer config
+require('./middleware/multer.js');
 
 const userRoutes = require('./routes/userRoutes'); 
 const categoryRoutes = require('./routes/categoryRoutes.js');
@@ -15,15 +20,21 @@ const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const app = express();
 
+
+// Add this line to serve files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.use(cors({ credentials: true, origin: 'http://localhost:3000' })); 
 app.use(express.json());
 app.use(cookieParser());
+app.use(bodyParser.json());
 
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use("/api/contact", contactRoutes);
 
 
 app.get('/', (req, res) => {
