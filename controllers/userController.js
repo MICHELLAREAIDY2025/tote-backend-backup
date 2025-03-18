@@ -169,3 +169,44 @@ exports.logout = async (req, res) => {
         return res.status(500).json({ error: 'Something went wrong. Please try again.' });
     }
 };
+
+exports.getUserById = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied! Admins only.' });
+        }
+
+        const { id } = req.params;
+        const user = await User.findByPk(id, {
+            attributes: ['id', 'name', 'email', 'role', 'address']
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        return res.status(200).json({ user });
+
+    } catch (error) {
+        console.error('Get User By ID Error:', error);
+        return res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    }
+};
+ 
+exports.getMe = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id, {
+            attributes: ['id', 'name', 'email', 'role', 'address']
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        return res.status(200).json({ user });
+
+    } catch (error) {
+        console.error('Get Me Error:', error);
+        return res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    }
+};
