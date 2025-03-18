@@ -63,8 +63,6 @@ const addProduct = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
-
-
 // Update Product (Admin Only)
 const updateProduct = async (req, res) => {
     try {
