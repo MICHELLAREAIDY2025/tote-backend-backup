@@ -89,7 +89,7 @@ const addProduct = async (req, res) => {
 // Update Product (Admin Only)
 const updateProduct = async (req, res) => {
     try {
-        const { name, price, category_id, stock, description } = req.body;
+        const { name, price, category_id, stock, description, deleteImages } = req.body;
         const product = await Product.findByPk(req.params.id);
 
         if (!product) return res.status(404).json({ error: 'Product not found.' });
