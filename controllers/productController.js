@@ -133,34 +133,5 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-const addProduct = async (req, res) => {
-    try {
-        const { name, description, price, category_id, stock, user_id } = req.body;
-        
-        if (!name || !price || !category_id || !stock || !user_id) {
-            return res.status(400).json({ error: 'All fields are required.' });
-        }
 
-        // Get the file path from multer - fix the path to match your storage destination
-        const imageUrls = req.files ? req.files.map(file => `uploads/products/${file.filename}`) : [];
-
-
-        const product = await Product.create({
-            name,
-            description,
-            price,
-            category_id,
-            stock,
-            image: imageUrls,
-            user_id
-        });
-
-        res.status(201).json({ message: 'Product added successfully!', product });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
-    }
-};
-
-module.exports = { addProduct, getAllProducts, getProductById, createProduct, updateProduct, deleteProduct };
+module.exports = { addProduct, getAllProducts, getProductById, updateProduct, deleteProduct };
