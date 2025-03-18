@@ -48,38 +48,41 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
     try {
         const { name, price, category_id, stock, description } = req.body;
-
         const product = await Product.findByPk(req.params.id);
+        
         if (!product) return res.status(404).json({ error: 'Product not found.' });
 
-        //  Check if category exists before updating
+        //  Validate category existence
         if (category_id) {
             const categoryExists = await Category.findByPk(category_id);
             if (!categoryExists) return res.status(400).json({ error: 'Invalid category! Category does not exist.' });
         }
- // Handle image update
- let imageUrl = product.image; // Keep existing image by default
- if (req.file) {
-     // If there's a new file, update the image URL
-     imageUrl = `/uploads/products/${req.file.filename}`;
-     
-     // Optionally: Delete the old image file if it exists
-     if (product.image) {
-         const oldImagePath = path.join(__dirname, '..', product.image);
-         if (fs.existsSync(oldImagePath)) {
-             fs.unlinkSync(oldImagePath);
-         }
-     }
- }
-await product.update({ 
-     name, 
-     price, 
-     category_id, 
-     stock, 
-     description, 
-     image: imageUrl 
- });
+
+        // Handle multiple image updates
+        let imageUrls = product.image; // Keep existing images
+        if (req.files && req.files.length > 0) {
+            // Delete old images
+            if (product.image && Array.isArray(product.image)) {
+                product.image.forEach(img => {
+                    const oldImagePath = path.join(__dirname, '..', img);
+                    if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+                });
+            }
+            // Store new image URLs
+            imageUrls = req.files.map(file => `uploads/products/${file.filename}`);
+        }
+
+        await product.update({ 
+            name, 
+            price, 
+            category_id, 
+            stock, 
+            description, 
+            image: imageUrls  // ✅ Update multiple images
+        });
+
         res.status(200).json({ message: 'Product updated successfully.', product });
+
     } catch (error) {
         console.error('Error updating product:', error);
         res.status(500).json({ error: 'Failed to update product.' });
@@ -116,7 +119,8 @@ const addProduct = async (req, res) => {
         }
 
         // Get the file path from multer - fix the path to match your storage destination
-        const imageUrl = req.file ? `/uploads/products/${req.file.filename}` : null;
+        const imageUrls = req.files ? req.files.map(file => `uploads/products/${file.filename}`) : [];
+
 
         const product = await Product.create({
             name,
@@ -124,7 +128,7 @@ const addProduct = async (req, res) => {
             price,
             category_id,
             stock,
-            image: imageUrl,
+            image: imageUrls,
             user_id
         });
 

@@ -19,14 +19,14 @@ router.get('/:id', productController.getProductById);
 router.post('/', 
     authMiddleware.protect, 
     authMiddleware.authorizeAdmin, 
-    upload.single('image'), 
+    upload.array('images', 10),  // ✅ Allow multiple images
     productController.addProduct
 );
 
 router.put('/:id', 
     authMiddleware.protect, 
     authMiddleware.authorizeAdmin, 
-    upload.single('image'), // Allow image updates
+    upload.array('images', 10),  // ✅ Allow multiple image updates
     productController.updateProduct
 );
 
