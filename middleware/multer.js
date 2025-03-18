@@ -4,7 +4,6 @@ const fs = require("fs");
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // Change this to match the path in your controller
         const dir = 'uploads/products';
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
@@ -18,12 +17,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
-        files: 20,
-    },
+    limits: { fileSize: 5 * 1024 * 1024, files: 20 }, // 5MB limit, max 20 images
     fileFilter: (req, file, cb) => {
-        // Add file type validation
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {

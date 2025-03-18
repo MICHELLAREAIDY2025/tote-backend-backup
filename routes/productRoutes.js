@@ -3,34 +3,31 @@ const productController = require('../controllers/productController');
 const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/multer');
 
-
-
 const router = express.Router();
 
-//  Public Routes (Everyone can see products)
-router.get('/', productController.getAllProducts);
-router.get('/:id', productController.getProductById);
+// Public Routes (Customers can access these)
+router.get('/', productController.getAllProducts); // Get all products
+router.get('/:id', productController.getProductById); // Get product by ID
 
-
-
-
-// Admin Routes (Only Admins can modify products)
-// Route to create a product with an image
-router.post('/', 
+// Admin Routes (Protected)
+router.post(
+    '/', 
     authMiddleware.protect, 
     authMiddleware.authorizeAdmin, 
     upload.array('images', 10),  // ✅ Allow multiple images
     productController.addProduct
 );
 
-router.put('/:id', 
+router.put(
+    '/:id', 
     authMiddleware.protect, 
     authMiddleware.authorizeAdmin, 
     upload.array('images', 10),  // ✅ Allow multiple image updates
     productController.updateProduct
 );
 
-router.delete('/:id', 
+router.delete(
+    '/:id', 
     authMiddleware.protect, 
     authMiddleware.authorizeAdmin, 
     productController.deleteProduct

@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
 const Product = require('../models/Product');
 
+// Checkout Controller: Places an Order and Removes Items from Cart
 exports.checkout = async (req, res) => {
     try {
         const user_id = req.user.id;
@@ -22,8 +23,10 @@ exports.checkout = async (req, res) => {
             total_price += product.price * item.quantity;
         }
 
+        // Create Order
         const order = await Order.create({ user_id, total_price, status: 'pending' });
 
+        // Insert Order Items (without Sequelize associations)
         for (let item of cartItems) {
             await OrderItem.create({
                 order_id: order.id,
@@ -32,25 +35,149 @@ exports.checkout = async (req, res) => {
             });
         }
 
+        // Remove items from Cart after checkout
         await Cart.destroy({ where: { user_id } });
 
         return res.status(201).json({ message: 'Order placed successfully', order_id: order.id });
     } catch (error) {
-        console.error(' Checkout Error:', error);
+        console.error('Checkout Error:', error);
         return res.status(500).json({ error: 'Something went wrong' });
     }
 };
 
+// Get All Orders (Admin Only, No Relationships)
 exports.getAllOrders = async (req, res) => {
     try {
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'Access denied' });
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied! Admins only.' });
         }
 
-        const orders = await Order.findAll();
+        const orders = await Order.findAll(); // No Sequelize associations
         return res.status(200).json(orders);
     } catch (error) {
-        console.error(' Get Orders Error:', error);
-        return res.status(500).json({ error: 'Something went wrong' });
+        console.error('Get Orders Error:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+// Get Order Items by Order ID (Without Associations)
+exports.getOrderItems = async (req, res) => {
+    try {
+        const { order_id } = req.params;
+        const order = await Order.findByPk(order_id);
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Only allow the order owner or admin to access
+        if (req.user.id !== order.user_id && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied!' });
+        }
+
+        // Fetch Order Items without Sequelize associations
+        const orderItems = await OrderItem.findAll({ where: { order_id } });
+
+        return res.status(200).json(orderItems);
+    } catch (error) {
+        console.error('Get Order Items Error:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+// Cancel Order (Admins Only)
+exports.cancelOrder = async (req, res) => {
+    try {
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied! Admins only.' });
+        }
+
+        const { order_id } = req.params;
+        const order = await Order.findByPk(order_id);
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+
+        // Delete Order Items first (No associations used)
+        await OrderItem.destroy({ where: { order_id } });
+
+        // Delete the Order
+        await order.destroy();
+
+        return res.status(200).json({ message: 'Order successfully canceled' });
+    } catch (error) {
+        console.error('Cancel Order Error:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+// Update Order Item (Admins Only)
+exports.updateOrderItem = async (req, res) => {
+    try {
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied! Admins only.' });
+        }
+
+        const { order_item_id } = req.params;
+        const { quantity } = req.body;
+
+        const orderItem = await OrderItem.findByPk(order_item_id);
+        if (!orderItem) return res.status(404).json({ error: 'Order item not found' });
+
+        await orderItem.update({ quantity });
+
+        return res.status(200).json({ message: 'Order item updated successfully' });
+    } catch (error) {
+        console.error('Update Order Item Error:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+
+exports.deleteOrderItem = async (req, res) => {
+    try {
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied! Admins only.' });
+        }
+
+        const { order_id, order_item_id } = req.params;
+ 
+        const order = await Order.findByPk(order_id);
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+ 
+        const orderItem = await OrderItem.findOne({ where: { id: order_item_id, order_id } });
+        if (!orderItem) {
+            return res.status(404).json({ error: 'Order item not found' });
+        }
+ 
+        await orderItem.destroy();
+
+        return res.status(200).json({ message: 'Order item removed successfully' });
+    } catch (error) {
+        console.error('Delete Order Item Error:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+exports.updateOrder = async (req, res) => {
+    try {
+        if (!req.user || req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Access denied! Admins only.' });
+        }
+
+        const { order_id } = req.params;
+        const updateData = req.body;  
+ 
+        const order = await Order.findByPk(order_id);
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+ 
+        await order.update(updateData);
+
+        return res.status(200).json({ message: 'Order updated successfully' });
+    } catch (error) {
+        console.error('Update Order Error:', error);
+        return res.status(500).json({ error: error.message });
     }
 };
