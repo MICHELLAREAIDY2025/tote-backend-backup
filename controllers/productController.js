@@ -1,30 +1,52 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
-const path = require('path'); 
-const fs = require('fs'); 
+const path = require('path');
+const fs = require('fs');
+
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5000'; // Ensure this is set correctly
+
+// Function to properly construct the image URL by removing any leading slashes from the file path
+const constructImageUrl = (imagePath) => {
+    return `${BASE_URL}/${imagePath.replace(/^\/+/, '')}`; // Remove leading slashes
+};
 
 //  Get All Products (Public)
 const getAllProducts = async (req, res) => {
     try {
-        const products = await Product.findAll({ 
-            include: { model: Category, attributes: ['name'] } 
+        const products = await Product.findAll({
+            include: { model: Category, attributes: ['name'] }
         });
-        res.status(200).json(products);
+
+        // Map the product image paths to full URLs
+        const updatedProducts = products.map(product => {
+            const imagePaths = JSON.parse(product.image || '[]').map(image => constructImageUrl(image));
+            return {
+                ...product.toJSON(),
+                image: imagePaths
+            };
+        });
+
+        res.status(200).json(updatedProducts);
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).json({ error: 'Failed to fetch products.' });
     }
 };
 
-//  Get Product by ID (Public)
+// Get Product by ID (Public)
 const getProductById = async (req, res) => {
     try {
-        const product = await Product.findByPk(req.params.id, { 
-            include: { model: Category, attributes: ['name'] } 
+        const product = await Product.findByPk(req.params.id, {
+            include: { model: Category, attributes: ['name'] }
         });
         if (!product) return res.status(404).json({ error: 'Product not found.' });
 
-        res.status(200).json(product);
+        // Map image paths to full URLs
+        const imagePaths = JSON.parse(product.image || '[]').map(image => constructImageUrl(image));
+        res.status(200).json({
+            ...product.toJSON(),
+            image: imagePaths
+        });
     } catch (error) {
         console.error('Error fetching product:', error);
         res.status(500).json({ error: 'Failed to fetch product.' });
@@ -44,6 +66,7 @@ const addProduct = async (req, res) => {
             return res.status(400).json({ error: 'All fields are required.' });
         }
 
+        // Generate image paths
         const imagePaths = req.files ? req.files.map(file => `/uploads/products/${file.filename}`) : [];
 
         const product = await Product.create({
@@ -57,32 +80,32 @@ const addProduct = async (req, res) => {
         });
 
         res.status(201).json({ message: 'Product added successfully!', product });
-
     } catch (error) {
         console.error('Error adding product:', error);
         res.status(500).json({ error: 'Server error' });
     }
 };
+
 // Update Product (Admin Only)
 const updateProduct = async (req, res) => {
     try {
         const { name, price, category_id, stock, description } = req.body;
         const product = await Product.findByPk(req.params.id);
-        
+
         if (!product) return res.status(404).json({ error: 'Product not found.' });
 
-        //  Validate category existence
+        // Validate category existence
         if (category_id) {
             const categoryExists = await Category.findByPk(category_id);
             if (!categoryExists) return res.status(400).json({ error: 'Invalid category! Category does not exist.' });
         }
 
         // Handle multiple image updates
-        let imageUrls = product.image; // Keep existing images
+        let imageUrls = product.image ? JSON.parse(product.image) : []; // Keep existing images
         if (req.files && req.files.length > 0) {
             // Delete old images
-            if (product.image && Array.isArray(product.image)) {
-                product.image.forEach(img => {
+            if (imageUrls.length > 0) {
+                imageUrls.forEach(img => {
                     const oldImagePath = path.join(__dirname, '..', img);
                     if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
                 });
@@ -91,17 +114,16 @@ const updateProduct = async (req, res) => {
             imageUrls = req.files.map(file => `uploads/products/${file.filename}`);
         }
 
-        await product.update({ 
-            name, 
-            price, 
-            category_id, 
-            stock, 
-            description, 
-            image: imageUrls  // ✅ Update multiple images
+        await product.update({
+            name,
+            price,
+            category_id,
+            stock,
+            description,
+            image: JSON.stringify(imageUrls)  // Update images
         });
 
         res.status(200).json({ message: 'Product updated successfully.', product });
-
     } catch (error) {
         console.error('Error updating product:', error);
         res.status(500).json({ error: 'Failed to update product.' });
@@ -130,6 +152,5 @@ const deleteProduct = async (req, res) => {
         res.status(500).json({ error: 'Failed to delete product.' });
     }
 };
-
 
 module.exports = { addProduct, getAllProducts, getProductById, updateProduct, deleteProduct };
