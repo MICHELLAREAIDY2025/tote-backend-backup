@@ -14,15 +14,15 @@ router.post(
     '/', 
     authMiddleware.protect, 
     authMiddleware.authorizeAdmin, 
-    upload.array('images', 20), 
-    productController.addProduct    
+    upload.array('images', 10),  // ✅ Allow multiple images
+    productController.addProduct
 );
 
 router.put(
     '/:id', 
     authMiddleware.protect, 
     authMiddleware.authorizeAdmin, 
-    upload.array('images', 20), 
+    upload.array('images', 10),  // ✅ Allow multiple image updates
     productController.updateProduct
 );
 
