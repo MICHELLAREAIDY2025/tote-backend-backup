@@ -3,7 +3,6 @@ const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
 const Product = require('../models/Product');
 
-// Checkout Controller: Places an Order and Removes Items from Cart
 exports.checkout = async (req, res) => {
     try {
         const user_id = req.user.id;
@@ -22,20 +21,22 @@ exports.checkout = async (req, res) => {
             }
             total_price += product.price * item.quantity;
         }
-
-        // Create Order
+ 
         const order = await Order.create({ user_id, total_price, status: 'pending' });
-
-        // Insert Order Items (without Sequelize associations)
+ 
         for (let item of cartItems) {
             await OrderItem.create({
                 order_id: order.id,
                 product_id: item.product_id,
                 quantity: item.quantity
             });
+ 
+            await Product.increment('stock', {
+                by: item.quantity,
+                where: { id: item.product_id }
+            });
         }
-
-        // Remove items from Cart after checkout
+ 
         await Cart.destroy({ where: { user_id } });
 
         return res.status(201).json({ message: 'Order placed successfully', order_id: order.id });
@@ -179,5 +180,23 @@ exports.updateOrder = async (req, res) => {
     } catch (error) {
         console.error('Update Order Error:', error);
         return res.status(500).json({ error: error.message });
+    }
+};
+// Get Orders for Logged-in User
+exports.getUserOrders = async (req, res) => {
+    try {
+        const user_id = req.user.id;
+
+        
+        const orders = await Order.findAll({ where: { user_id } });
+
+        if (orders.length === 0) {
+            return res.status(404).json({ error: 'No orders found for this user' });
+        }
+
+        return res.status(200).json(orders);
+    } catch (error) {
+        console.error('Get User Orders Error:', error);
+        return res.status(500).json({ error: 'Something went wrong' });
     }
 };

@@ -7,7 +7,8 @@ const {
     cancelOrder,
     updateOrderItem,
     deleteOrderItem,
-    updateOrder
+    updateOrder,
+    getUserOrders
 } = require('../controllers/orderController');
 
 const router = express.Router();
@@ -19,5 +20,6 @@ router.delete('/:order_id', protect, cancelOrder);
 router.put('/item/:order_item_id', protect, updateOrderItem);
 router.delete('/:order_id/item/:order_item_id', protect, deleteOrderItem);
 router.put('/:order_id', protect, updateOrder);
+router.get('/my-orders', protect, getUserOrders);
 
 module.exports = router;
