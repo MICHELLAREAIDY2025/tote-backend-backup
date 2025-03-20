@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Order = require('../models/Order');
 
 exports.login = async (req, res) => {
     try {
@@ -207,6 +208,42 @@ exports.getMe = async (req, res) => {
 
     } catch (error) {
         console.error('Get Me Error:', error);
+        return res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    }
+};
+
+exports.deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const orderCount = await Order.count({ where: { user_id: id } });
+        if (orderCount > 0) {
+            return res.status(400).json({ error: 'User cannot be deleted because they have existing orders' });
+        }
+
+        await User.destroy({ where: { id } });
+
+        return res.status(200).json({ message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Delete User Error:', error);
+        return res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    }
+};
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        const users = await User.findAll({
+            attributes: ['id', 'name', 'email', 'role', 'address']
+        });
+
+        return res.status(200).json({ users });
+    } catch (error) {
+        console.error('Get All Users Error:', error);
         return res.status(500).json({ error: 'Something went wrong. Please try again.' });
     }
 };
