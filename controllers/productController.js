@@ -13,7 +13,14 @@ const constructImageUrl = (imagePath) => {
 //  Get All Products (Public)
 const getAllProducts = async (req, res) => {
     try {
+        // Check user role from the JWT middleware
+        const isAdmin = req.user && req.user.role === 'admin';
+
+        // Build condition based on role
+        const condition = isAdmin ? {} : { stock: { [require('sequelize').Op.gt]: 0 } };
+
         const products = await Product.findAll({
+            where: condition,
             include: { model: Category, attributes: ['name'] }
         });
 

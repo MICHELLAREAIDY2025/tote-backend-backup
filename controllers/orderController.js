@@ -311,3 +311,28 @@ exports.getBestSellingProducts = async (req, res) => {
         return res.status(500).json({ error: error.message || "Something went wrong." });
     }
 };
+////////////////////////////////////////
+exports.getOrderItemsByUser = async (req, res) => {
+    try {
+        const user_id = req.user.id;
+
+        const orderItems = await OrderItem.findAll({
+            include: [
+                {
+                    model: Order,
+                    where: { user_id }, 
+                    attributes: ['id', 'status', 'total_price']
+                },
+                {
+                    model: Product,
+                    attributes: ['id', 'name', 'price']
+                }
+            ]
+        });
+
+        return res.status(200).json(orderItems);
+    } catch (error) {
+        console.error('Get Order Items by User Error:', error);
+        return res.status(500).json({ error: 'Something went wrong while fetching order items.' });
+    }
+};

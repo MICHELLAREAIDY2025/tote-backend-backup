@@ -10,7 +10,7 @@ const {
     deleteOrderItem,
     updateOrder,
     getUserOrders,
-    getBestSellingProducts
+    getBestSellingProducts,getOrderItemsByUser
 } = require('../controllers/orderController');
 
 const router = express.Router();
@@ -25,6 +25,7 @@ router.delete('/:order_id/item/:order_item_id', protect,authorizeAdmin, deleteOr
 router.put('/:order_id', protect, authorizeAdmin,updateOrder);
 router.get('/my-orders', protect, getUserOrders);
 router.get("/best-sellers", protect, authorizeAdmin, getBestSellingProducts);
+router.get("/my-orderItems", protect, getOrderItemsByUser);
 
 
 module.exports = router;
