@@ -237,8 +237,8 @@ exports.getUserOrders = async (req, res) => {
 
 
 exports.getBestSellingProducts = async (req, res) => {
-    try {
-        console.log("Received query:", req.query);
+    try { 
+        
         const { year = "all", month = "all" } = req.query;
         let whereClause = {};
 
@@ -312,16 +312,35 @@ exports.getBestSellingProducts = async (req, res) => {
     }
 };
 ////////////////////////////////////////
+ 
+
 exports.getOrderItemsByUser = async (req, res) => {
     try {
         const user_id = req.user.id;
+        const { month = 'all' } = req.query;
+
+        let whereClause = { user_id };
+
+        if (month !== 'all') {
+            const monthNumber = new Date(Date.parse(`${month} 1, 2000`)).getMonth() + 1;
+            if (isNaN(monthNumber)) {
+                return res.status(400).json({ error: 'Invalid month format.' });
+            }
+
+            const startDate = new Date(new Date().getFullYear(), monthNumber - 1, 1);
+            const endDate = new Date(new Date().getFullYear(), monthNumber, 0, 23, 59, 59);
+
+            whereClause.createdAt = {
+                [Op.between]: [startDate, endDate]
+            };
+        }
 
         const orderItems = await OrderItem.findAll({
             include: [
                 {
                     model: Order,
-                    where: { user_id }, 
-                    attributes: ['id', 'status', 'total_price']
+                    where: whereClause,
+                    attributes: ['id', 'status', 'total_price', 'createdAt']
                 },
                 {
                     model: Product,
