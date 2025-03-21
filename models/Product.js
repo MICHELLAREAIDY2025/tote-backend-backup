@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 const Category = require('./Category'); // Import Category model
+//const Cart = require('./Cart');
 
 const Product = sequelize.define('Product', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
@@ -19,5 +20,8 @@ const Product = sequelize.define('Product', {
 //  Set up Product-Category relationship
 Category.hasMany(Product, { foreignKey: 'category_id', onDelete: 'CASCADE' });
 Product.belongsTo(Category, { foreignKey: 'category_id' });
+
+//product-cart relationship
+//Product.hasMany(Cart, { foreignKey: 'product_id', onDelete: 'CASCADE' });
 
 module.exports = Product;

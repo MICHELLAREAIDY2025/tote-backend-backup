@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db'); 
+//const Product = require('./Product'); // ✅ Import Product model
 
 const Cart = sequelize.define('Cart', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -11,5 +12,8 @@ const Cart = sequelize.define('Cart', {
 Cart.sync({ alter: true })
     .then(() => console.log('Cart table is synced'))
     .catch(error => console.error('Cart table sync error:', error));
+
+    // In your Cart model, make sure you have the association with Product
+    //Cart.belongsTo(Product, { foreignKey: 'product_id', onDelete: 'CASCADE' });
 
 module.exports = Cart;

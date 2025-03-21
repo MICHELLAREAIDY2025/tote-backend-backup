@@ -61,3 +61,74 @@ exports.removeFromCart = async (req, res) => {
         return res.status(500).json({ error: 'Something went wrong' });
     }
 };
+//update quantities 
+exports.updateCartItem = async (req, res) => {
+    try {
+        const { product_id } = req.params;
+        const { quantity } = req.body;
+        const user_id = req.user.id;
+
+        if (!quantity || quantity <= 0) {
+            return res.status(400).json({ error: 'Invalid quantity' });
+        }
+
+        const cartItem = await Cart.findOne({ where: { user_id, product_id } });
+        if (!cartItem) {
+            return res.status(404).json({ error: 'Product not found in cart' });
+        }
+
+        // Check if product has enough stock
+        const product = await Product.findByPk(product_id);
+        if (product && quantity > product.stock) {
+            return res.status(400).json({ 
+                error: 'Not enough stock available', 
+                availableStock: product.stock 
+            });
+        }
+
+        cartItem.quantity = quantity;
+        await cartItem.save();
+
+        return res.status(200).json({ 
+            message: 'Cart updated successfully', 
+            cartItem 
+        });
+    } catch (error) {
+        console.error('Update Cart Error:', error);
+        return res.status(500).json({ error: 'Something went wrong' });
+    }
+};
+//detailed cart information with product details, subtotals, and cart totals
+exports.getCartWithProducts = async (req, res) => {
+    try {
+      const user_id = req.user.id
+  
+      // First, get the cart items
+      const cartItems = await Cart.findAll({
+        where: { user_id },
+      })
+  
+      // Then, for each cart item, get the product details
+      const itemsWithProducts = await Promise.all(
+        cartItems.map(async (item) => {
+          const product = await Product.findByPk(item.product_id)
+          return {
+            ...item.toJSON(),
+            Product: product ? product.toJSON() : null,
+            subtotal: product ? product.price * item.quantity : 0,
+          }
+        }),
+      )
+         // Calculate total price
+    const totalPrice = itemsWithProducts.reduce((sum, item) => sum + (item.subtotal || 0), 0)
+
+    return res.status(200).json({
+      items: itemsWithProducts,
+      totalPrice,
+      itemCount: cartItems.length,
+    })
+  } catch (error) {
+    console.error("Get Cart with Products Error:", error)
+    return res.status(500).json({ error: "Something went wrong" })
+  }
+}

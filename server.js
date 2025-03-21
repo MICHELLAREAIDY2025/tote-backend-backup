@@ -35,6 +35,8 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use("/api/contact", contactRoutes);
+//app.delete('/api/cart/:product_id', CartController.removeFromCart);
+//app.get('/api/cart/with-products', CartController.getCartWithProducts);
 
 app.use('/api/shipping', shippingRoutes);
 
