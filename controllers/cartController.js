@@ -71,6 +71,25 @@ exports.removeFromCart = async (req, res) => {
         return res.status(500).json({ error: 'Something went wrong' });
     }
 };
+
+exports.clearCart = async (req, res) => {
+    try {
+        const user_id = req.user.id;
+
+        const deletedCount = await Cart.destroy({ where: { user_id } });
+
+        return res.status(200).json({
+            message: 'Cart cleared successfully',
+            deletedItems: deletedCount
+        });
+    } catch (error) {
+        console.error('Clear Cart Error:', error);
+        return res.status(500).json({ error: 'Something went wrong while clearing the cart' });
+    }
+};
+
+
+
 //update quantities 
 exports.updateCartItem = async (req, res) => {
     try {
