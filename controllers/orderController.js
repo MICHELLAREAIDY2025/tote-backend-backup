@@ -237,7 +237,7 @@ exports.getBestSellingProducts = async (req, res) => {
     try { 
         
         const { year = "all", month = "all" } = req.query;
-        let whereClause = {};
+        let whereClause = {status: 'delivered'};
 
         if (year !== "all") {
             whereClause.createdAt = {
