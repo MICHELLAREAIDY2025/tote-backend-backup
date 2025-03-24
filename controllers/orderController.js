@@ -3,16 +3,19 @@ const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
 const Product = require('../models/Product');
 const { Op } = require("sequelize");
-
+const User = require('../models/User'); 
 exports.checkout = async (req, res) => {
     try {
-        const user_id = req.user.id;
+         const user_id = req.user.id;
         const cartItems = await Cart.findAll({ where: { user_id } });
-
+        const { address } = req.body;
         if (cartItems.length === 0) {
             return res.status(400).json({ error: 'Cart is empty' });
         }
 
+        if (address) {
+            await User.update({ address }, { where: { id: user_id } });
+        }
         let total_price = 0;
 
         for (let item of cartItems) {
