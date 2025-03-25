@@ -247,3 +247,58 @@ exports.getAllUsers = async (req, res) => {
         return res.status(500).json({ error: 'Something went wrong. Please try again.' });
     }
 };
+exports.updateUserById = async (req, res) => {
+    try {
+        const { id } = req.params; // Extract user ID from route parameters
+        const { name, email, newPassword, address } = req.body; // Extract fields to update
+
+        // Find the user by ID
+        const user = await User.findByPk(id);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Validate email if it's being updated
+        if (email && email !== user.email) {
+            if (!validateEmail(email)) {
+                return res.status(400).json({ error: 'Invalid email format' });
+            }
+
+            const existingUser = await User.findOne({ where: { email } });
+            if (existingUser) {
+                return res.status(409).json({ error: 'This email is already in use' });
+            }
+        }
+
+        // Hash new password if provided
+        let updatedPassword = user.password;
+        if (newPassword) {
+            if (!validatePassword(newPassword)) {
+                return res.status(400).json({
+                    error: 'New password must be at least 6 characters long, contain at least 1 uppercase letter and 1 number',
+                });
+            }
+            updatedPassword = hashPassword(newPassword);
+        }
+
+        // Update user fields
+        user.name = name || user.name;
+        user.email = email || user.email;
+        user.password = updatedPassword;
+        user.address = address || user.address;
+
+        await user.save();
+
+        // Exclude password from the response
+        const { password: _, ...updatedUser } = user.dataValues;
+
+        return res.status(200).json({
+            message: 'User updated successfully!',
+            user: updatedUser,
+        });
+    } catch (error) {
+        console.error('Update User By ID Error:', error);
+        return res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    }
+};
+
