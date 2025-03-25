@@ -3,16 +3,19 @@ const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
 const Product = require('../models/Product');
 const { Op } = require("sequelize");
-
+const User = require('../models/User'); 
 exports.checkout = async (req, res) => {
     try {
-        const user_id = req.user.id;
+         const user_id = req.user.id;
         const cartItems = await Cart.findAll({ where: { user_id } });
-
+        const { address } = req.body;
         if (cartItems.length === 0) {
             return res.status(400).json({ error: 'Cart is empty' });
         }
 
+        if (address) {
+            await User.update({ address }, { where: { id: user_id } });
+        }
         let total_price = 0;
 
         for (let item of cartItems) {
@@ -47,22 +50,21 @@ exports.checkout = async (req, res) => {
     }
 };
 
-// Get All Orders (Admin Only, No Relationships)
+// Get All Orders  
 exports.getAllOrders = async (req, res) => {
     try {
         if (!req.user || req.user.role !== 'admin') {
             return res.status(403).json({ error: 'Access denied! Admins only.' });
         }
 
-        const orders = await Order.findAll(); // No Sequelize associations
+        const orders = await Order.findAll(); 
         return res.status(200).json(orders);
     } catch (error) {
         console.error('Get Orders Error:', error);
         return res.status(500).json({ error: error.message });
     }
 };
-
-// Get Order Items by Order ID (Without Associations)
+ //get items by order id
 exports.getOrderItems = async (req, res) => {
     try {
         const { order_id } = req.params;
@@ -71,13 +73,11 @@ exports.getOrderItems = async (req, res) => {
         if (!order) {
             return res.status(404).json({ error: 'Order not found' });
         }
-
-        // Only allow the order owner or admin to access
+ 
         if (req.user.id !== order.user_id && req.user.role !== 'admin') {
             return res.status(403).json({ error: 'Access denied!' });
         }
-
-        // Fetch Order Items without Sequelize associations
+ 
         const orderItems = await OrderItem.findAll({ where: { order_id } });
 
         return res.status(200).json(orderItems);
@@ -237,10 +237,10 @@ exports.getUserOrders = async (req, res) => {
 
 
 exports.getBestSellingProducts = async (req, res) => {
-    try {
-        console.log("Received query:", req.query);
+    try { 
+        
         const { year = "all", month = "all" } = req.query;
-        let whereClause = {};
+        let whereClause = {status: 'delivered'};
 
         if (year !== "all") {
             whereClause.createdAt = {
@@ -260,9 +260,6 @@ exports.getBestSellingProducts = async (req, res) => {
                 [Op.lte]: new Date(`${year}-${monthNumber}-31`),
             };
         }
-
-        console.log("Applied filters:", whereClause);
-
         const orderItems = await OrderItem.findAll({
             include: [
                 {
@@ -272,12 +269,11 @@ exports.getBestSellingProducts = async (req, res) => {
                 },
                 {
                     model: Product, 
-                    attributes: ["id", "name"]
+                    attributes: ["id", "name","stock"]
                 }
             ]
         });
-
-        console.log("Fetched order items count:", orderItems.length);
+ 
 
         if (orderItems.length === 0) {
             return res.status(200).json([]);  
@@ -293,7 +289,7 @@ exports.getBestSellingProducts = async (req, res) => {
         orderItems.forEach(item => {
             if (item.Product) { 
                 if (!productSales[item.product_id]) {
-                    productSales[item.product_id] = { product_name: item.Product.name, totalSales: 0 };
+                    productSales[item.product_id] = { product_name: item.Product.name, totalSales: 0 , stock: item.Product.stock};
                 }
                 productSales[item.product_id].totalSales += item.quantity;
             }
@@ -303,11 +299,54 @@ exports.getBestSellingProducts = async (req, res) => {
             .sort((a, b) => b.totalSales - a.totalSales);
  
         const bestSellers = sortedProducts.length > 0 ? sortedProducts.slice(0, 3) : [sortedProducts[0]];
-
-        console.log("Best-selling products:", bestSellers);
+ 
         return res.status(200).json(bestSellers);
     } catch (error) {
         console.error("Get Best-Selling Products Error:", error);
         return res.status(500).json({ error: error.message || "Something went wrong." });
+    }
+};
+////////////////////////////////////////
+ 
+
+exports.getOrderItemsByUser = async (req, res) => {
+    try {
+        const user_id = req.user.id;
+        const { month = 'all' } = req.query;
+
+        let whereClause = { user_id };
+
+        if (month !== 'all') {
+            const monthNumber = new Date(Date.parse(`${month} 1, 2000`)).getMonth() + 1;
+            if (isNaN(monthNumber)) {
+                return res.status(400).json({ error: 'Invalid month format.' });
+            }
+
+            const startDate = new Date(new Date().getFullYear(), monthNumber - 1, 1);
+            const endDate = new Date(new Date().getFullYear(), monthNumber, 0, 23, 59, 59);
+
+            whereClause.createdAt = {
+                [Op.between]: [startDate, endDate]
+            };
+        }
+
+        const orderItems = await OrderItem.findAll({
+            include: [
+                {
+                    model: Order,
+                    where: whereClause,
+                    attributes: ['id', 'status', 'total_price', 'createdAt']
+                },
+                {
+                    model: Product,
+                    attributes: ['id', 'name', 'price']
+                }
+            ]
+        });
+
+        return res.status(200).json(orderItems);
+    } catch (error) {
+        console.error('Get Order Items by User Error:', error);
+        return res.status(500).json({ error: 'Something went wrong while fetching order items.' });
     }
 };

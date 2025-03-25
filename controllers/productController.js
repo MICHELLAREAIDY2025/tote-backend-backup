@@ -2,6 +2,8 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const path = require('path');
 const fs = require('fs');
+const OrderItem = require('../models/OrderItem');
+
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5000'; // Ensure this is set correctly
 
@@ -13,7 +15,14 @@ const constructImageUrl = (imagePath) => {
 //  Get All Products (Public)
 const getAllProducts = async (req, res) => {
     try {
+        // Check user role from the JWT middleware
+        const isAdmin = req.user && req.user.role === 'admin';
+
+        // Build condition based on role
+        const condition = isAdmin ? {} : { stock: { [require('sequelize').Op.gt]: 0 } };
+
         const products = await Product.findAll({
+            where: condition,
             include: { model: Category, attributes: ['name'] }
         });
 
@@ -133,24 +142,40 @@ const updateProduct = async (req, res) => {
 // Delete Product (Admin Only)
 const deleteProduct = async (req, res) => {
     try {
-        const product = await Product.findByPk(req.params.id);
-        if (!product) return res.status(404).json({ error: 'Product not found.' });
-
-        // Remove images from storage
-        const imagePaths = JSON.parse(product.image || '[]');
-        imagePaths.forEach(image => {
-            const imagePath = path.join(__dirname, '..', image);
-            if (fs.existsSync(imagePath)) {
-                fs.unlinkSync(imagePath);
-            }
+      const productId = req.params.id;
+  
+      // Check if product exists
+      const product = await Product.findByPk(productId);
+      if (!product) return res.status(404).json({ error: 'Product not found.' });
+  
+      //   Check if product is used in any order items
+      const existingOrderItem = await OrderItem.findOne({
+        where: { product_id: productId },
+      });
+  
+      if (existingOrderItem) {
+        return res.status(400).json({
+          error: 'Cannot delete this product. It exists in customer orders.',
         });
-
-        await product.destroy();
-        res.status(200).json({ message: 'Product deleted successfully.' });
+      }
+  
+      // Remove images from storage
+      const imagePaths = JSON.parse(product.image || '[]');
+      imagePaths.forEach(image => {
+        const imagePath = path.join(__dirname, '..', image);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      });
+  
+      await product.destroy();
+      res.status(200).json({ message: 'Product deleted successfully.' });
+  
     } catch (error) {
-        console.error('Error deleting product:', error);
-        res.status(500).json({ error: 'Failed to delete product.' });
+      console.error('Error deleting product:', error);
+      res.status(500).json({ error: 'Failed to delete product.' });
     }
-};
+  };
+  
 
 module.exports = { addProduct, getAllProducts, getProductById, updateProduct, deleteProduct };
